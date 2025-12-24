@@ -3,6 +3,7 @@ import { getExpenses} from "../services/expenses";
 import Modal from "../components/Modal";
 import ExpenseForm from "../components/ExpenseForm";
 import type { Expense } from "../types/expense";
+import UploadExpenses from "../components/UploadExpenses";
 
 const Dashboard = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -68,6 +69,10 @@ const Dashboard = () => {
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="mt-8">
+        {/* <h2 className="text-xl font-semibold mb-4"></h2> */}
+        <UploadExpenses />
       </div>
     </div>
   );

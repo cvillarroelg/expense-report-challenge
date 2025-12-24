@@ -30,6 +30,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       // 1️⃣ Login
       const { token } = await login(email, password);
       localStorage.setItem("token", token);
+      localStorage.setItem("email", email);
 
       // 2️⃣ Validar token
       await getMe();

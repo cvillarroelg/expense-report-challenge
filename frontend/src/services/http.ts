@@ -6,9 +6,11 @@ export const http = async <T>(
 ): Promise<T> => {
   const token = localStorage.getItem("token");
 
+  const isFormData = options.body instanceof FormData;
+
   const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    ...(token && { Authorization: `Bearer ${token}` }),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...options.headers,
   };
 
@@ -20,7 +22,7 @@ export const http = async <T>(
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.detail || "Error en la petición");
+    throw new Error(data.detail || "Request failed");
   }
 
   return data;
