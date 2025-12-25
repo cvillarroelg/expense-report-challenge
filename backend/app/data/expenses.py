@@ -4,7 +4,7 @@ expenses_data = [
         "amount": 2500.00,
         "currency": "USD",
         "department": "Engineering",
-        "category": "Software Licenses",
+        "category": "Software / Subscription",
         "description": "Annual subscription for cloud infrastructure services."
     },
     {
@@ -20,7 +20,7 @@ expenses_data = [
         "amount": 500.00,
         "currency": "USD",
         "department": "Finance",
-        "category": "Audit",
+        "category": "Other",
         "description": "External consultant fee for quarterly tax review."
     },
     {
@@ -28,7 +28,7 @@ expenses_data = [
         "amount": 1200.00,
         "currency": "USD",
         "department": "Marketing",
-        "category": "Advertising",
+        "category": "Office Supplies",
         "description": "Budget allocation for social media ad campaign."
     },
     {
@@ -36,7 +36,7 @@ expenses_data = [
         "amount": 350.00,
         "currency": "USD",
         "department": "Human Resources",
-        "category": "Recruitment",
+        "category": "Training",
         "description": "Job posting fees on professional networking platforms."
     }
 ]
