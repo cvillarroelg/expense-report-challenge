@@ -17,12 +17,12 @@ const handleSubmit = async (e: React.FormEvent) => {
     setError("");
 
     if (!validateEmail(email)) {
-      setError("El correo no es válido");
+      setError("The email address is invalid.");
       return;
     }
 
     if (!password) {
-      setError("La contraseña no puede estar vacía");
+      setError("The password cannot be empty");
       return;
     }
 

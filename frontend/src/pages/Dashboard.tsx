@@ -6,34 +6,27 @@ import type { Expense } from "../types/expense";
 import UploadExpenses from "../components/UploadExpenses";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-} from "recharts";
-import type { ChartDataInput } from "../types/charts";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { formatDateMMDDYYYY } from "../utils/date";
 import { formatUSD } from "../utils/currency";
 import { isDuplicateExpense } from "../utils/isDuplicateExpense";
+import DashboardActions from "../components/DashboardActions";
+import DashboardCharts from "../components/DashboardCharts";
+import DashboardTable from "../components/DashboardTable";
 
 const Dashboard = () => {
+  type DialogState =
+    | { type: "export" }
+    | { type: "duplicate"; expense: Expense }
+    | { type: "save"; expense: Expense }
+    | null;
+
+  const [dialog, setDialog] = useState<DialogState>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showExportConfirm, setShowExportConfirm] = useState(false);
-  const [pendingExpense, setPendingExpense] = useState<Expense | null>(null);
-  const [duplicateExpense, setDuplicateExpense] = useState<Expense | null>(
-    null
-  );
 
-  const getTotalExpenses = (expenses: Expense[]): number =>
+  const getTotalExpenses = (expenses: Expense[]) =>
     expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
 
   const totalAmount = getTotalExpenses(expenses);
@@ -41,7 +34,6 @@ const Dashboard = () => {
   const saveExpense = (newExpense: Expense) => {
     const stored = localStorage.getItem("expenses");
     const current = stored ? JSON.parse(stored) : [];
-
     const updated = [...current, newExpense];
 
     localStorage.setItem("expenses", JSON.stringify(updated));
@@ -70,46 +62,11 @@ const Dashboard = () => {
     });
 
     const finalY = (doc as any).lastAutoTable.finalY || 40;
-
     doc.setFontSize(12);
     doc.text(`Total Expenses: USD ${totalAmount}`, 14, finalY + 10);
 
     doc.save("expenses-report.pdf");
   };
-
-  const expensesByCategory: ChartDataInput[] = Object.values(
-    expenses.reduce<Record<string, ChartDataInput>>((acc, exp) => {
-      if (!acc[exp.category]) {
-        acc[exp.category] = {
-          name: exp.category,
-          total: 0,
-        };
-      }
-
-      acc[exp.category].total += Number(exp.amount);
-      return acc;
-    }, {})
-  );
-
-  const expensesByDepartment = Object.values(
-    expenses.reduce((acc: any, exp) => {
-      acc[exp.department] = acc[exp.department] || {
-        name: exp.department,
-        total: 0,
-      };
-      acc[exp.department].total += Number(exp.amount);
-      return acc;
-    }, {})
-  );
-
-  const COLORS = [
-    "#2563eb",
-    "#16a34a",
-    "#dc2626",
-    "#ca8a04",
-    "#7c3aed",
-    "#0d9488",
-  ];
 
   useEffect(() => {
     const storedExpenses = localStorage.getItem("expenses");
@@ -134,34 +91,14 @@ const Dashboard = () => {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-6">Submitted Reports</h1>
-      <div className="flex gap-4 mb-6">
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          + Create Report
-        </button>
 
-        <button
-          onClick={() => setShowExportConfirm(true)}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
-          Export to PDF
-        </button>
-      </div>
-
-      <ConfirmDialog
-        isOpen={showExportConfirm}
-        title="Export Report"
-        message="Are you sure you want to export this report to PDF?"
-        confirmText="Export"
-        onCancel={() => setShowExportConfirm(false)}
-        onConfirm={() => {
-          handleExportPDF();
-          setShowExportConfirm(false);
-        }}
+      {/* ACTIONS */}
+      <DashboardActions
+        onCreate={() => setIsModalOpen(true)}
+        onExport={() => setDialog({ type: "export" })}
       />
 
+      {/* CREATE EXPENSE MODAL */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -169,126 +106,81 @@ const Dashboard = () => {
       >
         <ExpenseForm
           onSubmit={(data) => {
-            const expense = {
-              ...data,
-              amount: Number(data.amount),
-            };
+            const expense = { ...data, amount: Number(data.amount) };
 
             if (isDuplicateExpense(expense, expenses)) {
-              setDuplicateExpense(expense);
+              setDialog({ type: "duplicate", expense });
               return;
             }
 
-            const updatedExpenses = saveExpense(expense);
-            setExpenses(updatedExpenses);
-            setIsModalOpen(false);
+            setDialog({ type: "save", expense });
           }}
           onCancel={() => setIsModalOpen(false)}
         />
       </Modal>
 
-      <ConfirmDialog
-        isOpen={!!duplicateExpense}
-        title="Possible Duplicate"
-        message="A similar expense already exists. Do you want to keep it anyway or discard it?"
-        confirmText="Keep Expense"
-        cancelText="Discard"
-        onCancel={() => setDuplicateExpense(null)}
-        onConfirm={() => {
-          if (!duplicateExpense) return;
+      {/* CHARTS */}
+      <DashboardCharts expenses={expenses} />
 
-          const updatedExpenses = saveExpense(duplicateExpense);
-          setExpenses(updatedExpenses);
-          setDuplicateExpense(null);
-          setIsModalOpen(false);
+      {/* TABLE */}
+      <DashboardTable expenses={expenses} />
+
+      <ConfirmDialog
+        isOpen={dialog !== null}
+        title={
+          dialog?.type === "export"
+            ? "Export Report"
+            : dialog?.type === "duplicate"
+            ? "Possible Duplicate"
+            : "Save Expense"
+        }
+        message={
+          dialog?.type === "export"
+            ? "Are you sure you want to export this report to PDF?"
+            : dialog?.type === "duplicate"
+            ? "A similar expense already exists. Do you want to keep it anyway?"
+            : "Are you sure you want to save this expense?"
+        }
+        confirmText={
+          dialog?.type === "export"
+            ? "Export"
+            : dialog?.type === "duplicate"
+            ? "Keep Expense"
+            : "Save"
+        }
+        cancelText={dialog?.type === "duplicate" ? "Discard" : "Cancel"}
+        onCancel={() => setDialog(null)}
+        onConfirm={() => {
+          if (!dialog) return;
+
+          if (dialog.type === "export") {
+            handleExportPDF();
+          }
+
+          if (dialog.type === "duplicate" || dialog.type === "save") {
+            const updated = saveExpense(dialog.expense);
+            setExpenses(updated);
+            setIsModalOpen(false);
+          }
+
+          setDialog(null);
         }}
       />
 
-      <ConfirmDialog
-        isOpen={!!pendingExpense}
-        title="Save Expense"
-        message="Are you sure you want to save this expense?"
-        confirmText="Save"
-        onCancel={() => setPendingExpense(null)}
-        onConfirm={() => {
-          if (!pendingExpense) return;
-
-          const updatedExpenses = saveExpense(pendingExpense);
-          setExpenses(updatedExpenses);
-          setPendingExpense(null);
-          setIsModalOpen(false);
-        }}
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Pie Chart - Category */}
-        <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-4">Expenses by Category</h3>
-
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={expensesByCategory}
-                dataKey="total"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label
-              >
-                {expensesByCategory.map((_, index) => (
-                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Bar Chart - Department */}
-        <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-4">Expenses by Department</h3>
-
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={expensesByDepartment}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="total" fill="#2563eb" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="min-w-full border-collapse">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3 text-left">Date</th>
-              <th className="p-3 text-left">Department</th>
-              <th className="p-3 text-left">Category</th>
-              <th className="p-3 text-right">Amount</th>
-              <th className="p-3 text-left">Currency</th>
-              <th className="p-3 text-left">Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {expenses.map((exp, index) => (
-              <tr key={index} className="border-t hover:bg-gray-50">
-                <td className="p-3">{formatDateMMDDYYYY(exp.date)}</td>
-                <td className="p-3">{exp.department}</td>
-                <td className="p-3">{exp.category}</td>
-                <td className="p-3 text-right font-medium">
-                  {formatUSD(exp.amount)}
-                </td>
-                <td className="p-3">{exp.currency}</td>
-                <td className="p-3">{exp.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* UPLOAD */}
       <div className="mt-8">
-        <UploadExpenses />
+        <UploadExpenses
+          onAddExpenses={(newExpenses, mode) => {
+            const stored = localStorage.getItem("expenses");
+            const current = stored ? JSON.parse(stored) : [];
+
+            const updated =
+              mode === "overwrite" ? newExpenses : [...current, ...newExpenses];
+
+            localStorage.setItem("expenses", JSON.stringify(updated));
+            setExpenses(updated);
+          }}
+        />
       </div>
     </div>
   );

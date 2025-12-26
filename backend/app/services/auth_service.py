@@ -1,4 +1,7 @@
-FAKE_TOKEN = "fake-jwt-token-123456"
+import time
+timesNow = int(time.time())
+
+FAKE_TOKEN = "fake-jwt-token"+str(timesNow)
 
 def authenticate_user(email: str, password: str) -> str:
     if not password:
