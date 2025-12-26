@@ -4,7 +4,7 @@ expenses_data = [
         "amount": 2500.00,
         "currency": "USD",
         "department": "Engineering",
-        "category": "Software / Subscription",
+        "category": "Software / Subscriptions",
         "description": "Annual subscription for cloud infrastructure services."
     },
     {

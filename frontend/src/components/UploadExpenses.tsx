@@ -7,52 +7,75 @@ const UploadExpenses = () => {
   const [hasFile, setHasFile] = useState(false);
   const [canSubmit, setCanSubmit] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [fileName, setFileName] = useState<string>("No file selected");
 
   const handleFileUpload = async (file: File) => {
-  setLoading(true);
-  setHasFile(true);
+    setLoading(true);
+    setHasFile(true);
 
-  try {
-    const result = await validateExpensesFile(file);
+    try {
+      const result = await validateExpensesFile(file);
 
-    // 🟥 Caso 1: error estructural
-    if (result.errors && result.errors.length > 0) {
-      setErrors(
-        result.errors.map((msg) => ({
+      // 🔴 Case 1: structural error (missing columns, etc.)
+      if (result.errors && result.errors.length > 0) {
+        setErrors(
+          result.errors.map((msg) => ({
+            row: 0,
+            errors: [msg],
+          }))
+        );
+        setCanSubmit(false);
+        return;
+      }
+
+      // 🟡 Case 2: row-level errors
+      const rowErrors = result.invalidRows ?? [];
+      setErrors(rowErrors);
+      setCanSubmit(result.valid);
+    } catch {
+      setErrors([
+        {
           row: 0,
-          errors: [msg],
-        }))
-      );
+          errors: ["Failed to validate file. Please try again."],
+        },
+      ]);
       setCanSubmit(false);
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    // 🟨 Caso 2: errores por fila
-    const rowErrors = result.invalidRows ?? [];
-    setErrors(rowErrors);
-    setCanSubmit(result.valid);
-  } catch {
-    setErrors([
-      { row: 0, errors: ["Failed to validate file. Please try again."] },
-    ]);
-    setCanSubmit(false);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="space-y-4 bg-white p-6 rounded shadow">
       <h2 className="text-lg font-semibold">Upload Expenses File</h2>
 
-      <input
-        type="file"
-        accept=".csv,.xlsx"
-        onChange={(e) => {
-          if (e.target.files) handleFileUpload(e.target.files[0]);
-        }}
-        className="block"
-      />
+      {/* Custom file input */}
+      <div className="flex items-center gap-4">
+        <label
+          htmlFor="expenses-file"
+          className="px-4 py-2 bg-gray-200 rounded cursor-pointer hover:bg-gray-300"
+        >
+          Choose File
+        </label>
+
+        <span className="text-sm text-gray-600">{fileName}</span>
+
+        <input
+          id="expenses-file"
+          type="file"
+          accept=".csv,.xlsx"
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              const file = e.target.files[0];
+              setFileName(file.name);
+              handleFileUpload(file);
+            } else {
+              setFileName("No file selected");
+            }
+          }}
+        />
+      </div>
 
       {loading && (
         <p className="text-sm text-gray-500">Validating file…</p>

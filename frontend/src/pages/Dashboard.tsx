@@ -33,8 +33,6 @@ const Dashboard = () => {
     null
   );
 
-  const EXPENSES_KEY = "expenses";
-
   const getTotalExpenses = (expenses: Expense[]): number =>
     expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
 
@@ -136,12 +134,6 @@ const Dashboard = () => {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-6">Submitted Reports</h1>
-      {/* <button
-        onClick={() => setIsModalOpen(true)}
-        className="bg-blue-600 text-white px-4 py-2 rounded"
-      >
-        + Create Report
-      </button> */}
       <div className="flex gap-4 mb-6">
         <button
           onClick={() => setIsModalOpen(true)}
@@ -296,7 +288,6 @@ const Dashboard = () => {
         </table>
       </div>
       <div className="mt-8">
-        {/* <h2 className="text-xl font-semibold mb-4"></h2> */}
         <UploadExpenses />
       </div>
     </div>

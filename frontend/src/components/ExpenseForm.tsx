@@ -1,6 +1,6 @@
 import { useState } from "react";
-import categoriesData from "../../../data/categories.json";
-import departmentsData from "../../../data/department.json";
+import categoriesData from "../data/categories.json";
+import departmentsData from "../data/department.json";
 import type { SelectOption } from "../types/common";
 
 interface ExpenseFormProps {
@@ -48,8 +48,6 @@ const ExpenseForm = ({ onSubmit, onCancel }: ExpenseFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("SUBMIT EJECUTADO");
-    console.log(form.description.trim().length);
     const newErrors: FormErrors = {};
     if (!form.department) {
       newErrors.department = "Department is required";
